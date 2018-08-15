@@ -2,6 +2,7 @@ package com.lw.redis.setBit;
 
 import redis.clients.jedis.Jedis;
 
+import java.util.BitSet;
 import java.util.Random;
 import java.util.stream.IntStream;
 

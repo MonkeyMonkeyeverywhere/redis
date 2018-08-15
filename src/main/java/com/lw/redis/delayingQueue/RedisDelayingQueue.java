@@ -3,6 +3,7 @@ package com.lw.redis.delayingQueue;
 import java.lang.reflect.Type;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
@@ -78,9 +79,7 @@ public class RedisDelayingQueue<T> {
 
             @Override
             public void run() {
-                for (int i = 0; i < 10; i++) {
-                    queue.delay("codehole" + i);
-                }
+                IntStream.range(0,10).forEach(i -> queue.delay("codehole" + i));
             }
 
         };
