@@ -14,7 +14,7 @@ import java.util.stream.IntStream;
 public class SetBitAttendance {
 
     public static void main(String[] args) {
-        Jedis jedis = new Jedis("192.168.101.131",6379);
+        Jedis jedis = new Jedis("localhost",6379);
         /** 一个月三十天随机到不到 */
         IntStream.range(1,31).forEach(i->{
             int flag = new Random().nextInt(2);

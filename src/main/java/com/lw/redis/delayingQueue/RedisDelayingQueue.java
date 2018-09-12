@@ -73,7 +73,7 @@ public class RedisDelayingQueue<T> {
     }
 
     public static void main(String[] args) {
-        Jedis jedis = new Jedis("192.168.101.131",6379);
+        Jedis jedis = new Jedis("localhost",6379);
         RedisDelayingQueue<String> queue = new RedisDelayingQueue<>(jedis, "q-demo");
         Thread producer = new Thread() {
 
