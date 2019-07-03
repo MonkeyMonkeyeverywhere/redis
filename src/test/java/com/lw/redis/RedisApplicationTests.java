@@ -5,6 +5,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -17,6 +19,12 @@ public class RedisApplicationTests {
 
 	@Test
 	public void contextLoads() {
+	}
+
+	@Test
+	public void testString(){
+		String testStr11 = (String) redisTemplate.opsForValue().get("testStr11");
+		System.out.println(testStr11);
 	}
 
 	@Test
