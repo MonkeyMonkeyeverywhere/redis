@@ -3,6 +3,7 @@ package com.lw.redis;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +30,7 @@ public class RedisBookletTest {
     /**
      * 每次运行前清除key
      */
-//    @Before
+    @Before
     public void clearTestKey() {
         Set<String> keys = redisTemplate.keys("RedisBookletTest*");
         if (!CollectionUtils.isEmpty(keys)) {
@@ -115,7 +116,7 @@ public class RedisBookletTest {
 
     @Test
     public void testLimitRate1(){
-        boolean b = simpleLimitRate(redisTemplate, "user1", "testLimitRate", 1,3);
+        boolean b = simpleLimitRate("user1", "testLimitRate", 1,3);
         Assert.assertTrue(b);
     }
 
@@ -137,16 +138,15 @@ public class RedisBookletTest {
 
     /**
      * second 秒之内最多能接收多少个请求
-     * @param redisTemplate
      * @param userId
      * @param action
      * @param second
      * @param maxCount
      * @return
      */
-    public static boolean simpleLimitRate(RedisTemplate redisTemplate,String userId, String action,int second, long maxCount){
+    public boolean simpleLimitRate(String userId, String action,int second, long maxCount){
         String key = userId + "-" + action;
-        Object o = redisTemplate.opsForValue().get(key);
+        Object o = this.redisTemplate.opsForValue().get(key);
         if(Objects.isNull(o)){
             redisTemplate.opsForValue().set(key,1 , second, TimeUnit.SECONDS);
             return Boolean.TRUE;
