@@ -3,17 +3,22 @@ package com.lw.redis;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.util.CollectionUtils;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -24,7 +29,7 @@ public class RedisBookletTest {
     /**
      * 每次运行前清除key
      */
-    @Before
+//    @Before
     public void clearTestKey() {
         Set<String> keys = redisTemplate.keys("RedisBookletTest*");
         if (!CollectionUtils.isEmpty(keys)) {
@@ -93,12 +98,93 @@ public class RedisBookletTest {
 
     }
 
+    /**
+     * 不精确统计
+     */
     @Test
     public void hyperLogLog (){
+        for (int i = 0 ; i < 10000 ; i++) {
+            redisTemplate.opsForHyperLogLog().add(wrapKey("hyperLogLog"),"log"+i);
+        }
+        for (int i = 5000 ; i < 15000 ; i++) {
+            redisTemplate.opsForHyperLogLog().add(wrapKey("hyperLogLog"),"log"+i);
+        }
+        Long hyperLogLog = redisTemplate.opsForHyperLogLog().size(wrapKey("hyperLogLog"));
+        System.out.println(hyperLogLog);
+    }
 
+    @Test
+    public void testLimitRate1(){
+        boolean b = simpleLimitRate(redisTemplate, "user1", "testLimitRate", 1,3);
+        Assert.assertTrue(b);
+    }
+
+    @Test
+    public void testGeoHash(){
+        // todo 地理位置可以用 es 实现 https://www.elastic.co/guide/cn/elasticsearch/guide/current/sorting-by-distance.html
+    }
+
+    @Test
+    public void testScan(){
+        final String pattern = "RedisBookletTest*";
+        List<String> keys = keys(pattern);
+        System.out.println(keys);
     }
 
     public static String wrapKey(String key){
         return "RedisBookletTest-"+key;
+    }
+
+    /**
+     * second 秒之内最多能接收多少个请求
+     * @param redisTemplate
+     * @param userId
+     * @param action
+     * @param second
+     * @param maxCount
+     * @return
+     */
+    public static boolean simpleLimitRate(RedisTemplate redisTemplate,String userId, String action,int second, long maxCount){
+        String key = userId + "-" + action;
+        Object o = redisTemplate.opsForValue().get(key);
+        if(Objects.isNull(o)){
+            redisTemplate.opsForValue().set(key,1 , second, TimeUnit.SECONDS);
+            return Boolean.TRUE;
+        }else {
+            Long count = redisTemplate.opsForValue().increment(key, 1L);
+            return count < maxCount ? Boolean.TRUE : Boolean.FALSE;
+        }
+    }
+
+    /**
+     * scan 实现
+     * @param pattern	表达式
+     * @param consumer	对迭代到的key进行操作
+     */
+    public void scan(String pattern, Consumer<byte[]> consumer) {
+        this.redisTemplate.execute((RedisConnection connection) -> {
+            try (Cursor<byte[]> cursor = connection.scan(ScanOptions.scanOptions().count(Long.MAX_VALUE).match(pattern).build())) {
+                cursor.forEachRemaining(consumer);
+                return null;
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    /**
+     * 获取符合条件的key
+     * @param pattern	表达式
+     * @return
+     */
+    public List<String> keys(String pattern) {
+        List<String> keys = new ArrayList<>();
+        this.scan(pattern, item -> {
+            //符合条件的key
+            String key = new String(item,StandardCharsets.UTF_8);
+            keys.add(key);
+        });
+        return keys;
     }
 }
